@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "dotenv": "^17.2.2",
+    "openai": "^5.19.1",
     "redis": "^5.8.2"
   },
   "devDependencies": {
