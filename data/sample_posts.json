@@ -1,0 +1,35 @@
+[
+  {
+    "id": "1001",
+    "content": "Benchmarking tiny on-device ML models for edge inference — latency down 40% with the new quantization pipeline.",
+    "author": {
+      "name": "John Smith",
+      "handle": "johnsmith",
+      "pfpUrl": "https://pbs.twimg.com/profile_images/johnsmith.jpg"
+    },
+    "url": "https://x.com/1001",
+    "date": "2025-09-05T10:00:00.000Z"
+  },
+  {
+    "id": "1002",
+    "content": "Q2 fintech update: payments startup doubled TPV and improved take rate; unit economics are trending positive.",
+    "author": {
+      "name": "Emily Johnson",
+      "handle": "emilyjohnson",
+      "pfpUrl": "https://pbs.twimg.com/profile_images/emilyjohnson.jpg"
+    },
+    "url": "https://x.com/1002",
+    "date": "2025-09-04T09:30:00.000Z"
+  },
+  {
+    "id": "1003",
+    "content": "Reading a new whitepaper on Web3 compliance and institutional custody — regulatory clarity is the next catalyst for adoption.",
+    "author": {
+      "name": "Michael Brown",
+      "handle": "michaelbrown",
+      "pfpUrl": "https://pbs.twimg.com/profile_images/michaelbrown.jpg"
+    },
+    "url": "https://x.com/1003",
+    "date": "2025-09-03T18:20:00.000Z"
+  }
+]
