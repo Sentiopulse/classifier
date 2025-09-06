@@ -1,19 +1,5 @@
-import openai from "./openaiClient";
+import openai from "./openaiClient.js";
 
-function mockEmbedding(input: string, dim = 1536) {
-  // deterministic pseudo-random vector derived from input (safe dev fallback)
-  const seed = Array.from(input).reduce((s, ch) => (s * 31 + ch.charCodeAt(0)) >>> 0, 2166136261);
-  const out: number[] = new Array(dim);
-  let x = seed;
-  for (let i = 0; i < dim; i++) {
-    // simple xorshift-ish sequence -> map to [-1,1]
-    x ^= x << 13;
-    x ^= x >>> 17;
-    x ^= x << 5;
-    out[i] = ((x >>> 0) % 10000) / 10000 * 2 - 1;
-  }
-  return out;
-}
 
 async function getEmbeddingWithRetry(input: string, opts?: { model?: string; maxRetries?: number }) {
   const model = opts?.model ?? "text-embedding-3-small";
@@ -32,7 +18,7 @@ async function getEmbeddingWithRetry(input: string, opts?: { model?: string; max
       if (type === "insufficient_quota" || (status === 429 && err?.error?.type === "insufficient_quota")) {
         console.error("OpenAI quota exhausted:", err?.error?.message || err);
         console.error("Action: check your OpenAI billing & quota or set a different API key in OPENAI_API_KEY.");
-        return mockEmbedding(input);
+        throw err;
       }
 
       // Retry on transient rate limits (HTTP 429)
@@ -40,7 +26,7 @@ async function getEmbeddingWithRetry(input: string, opts?: { model?: string; max
         console.warn(`OpenAI rate-limited (attempt ${attempt}/${maxRetries}). Retrying...`);
         if (attempt === maxRetries) {
           console.error("Max retries reached for OpenAI. Falling back to mock embedding.");
-          return mockEmbedding(input);
+          throw err;
         }
         const delay = baseDelay * 2 ** (attempt - 1);
         await new Promise((r) => setTimeout(r, delay));
@@ -51,8 +37,7 @@ async function getEmbeddingWithRetry(input: string, opts?: { model?: string; max
       throw err;
     }
   }
-  // fallback
-  return mockEmbedding(input);
+  throw new Error("Failed to get embedding after retries");
 }
 
 async function testEmbedding() {

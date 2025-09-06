@@ -1,4 +1,4 @@
-import { initRedis, getRedisClient } from "./redisClient";
+import { initRedis, getRedisClient } from "./redisClient.js";
 
 async function testRedis() {
   const client = await initRedis();
