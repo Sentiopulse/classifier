@@ -1,7 +1,7 @@
 import openai from "./openaiClient.js";
 
 
-async function getEmbeddingWithRetry(input: string, opts?: { model?: string; maxRetries?: number }) {
+export async function getEmbeddingWithRetry(input: string, opts?: { model?: string; maxRetries?: number }) {
   const model = opts?.model ?? "text-embedding-3-small";
   const maxRetries = opts?.maxRetries ?? 3;
   const baseDelay = 500; // ms
@@ -39,15 +39,3 @@ async function getEmbeddingWithRetry(input: string, opts?: { model?: string; max
   }
   throw new Error("Failed to get embedding after retries");
 }
-
-async function testEmbedding() {
-  const input = "TypeScript makes JavaScript scalable.";
-  try {
-    const embedding = await getEmbeddingWithRetry(input, { model: "text-embedding-3-small", maxRetries: 3 });
-    console.log("Embedding vector length:", embedding.length);
-  } catch (err) {
-    console.error("Failed to get embedding and fallback failed:", err);
-  }
-}
-
-testEmbedding();
