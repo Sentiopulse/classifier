@@ -30,24 +30,6 @@ const CategorizationSchema = z.object({
 
 export type Categorization = z.infer<typeof CategorizationSchema>;
 
-function extractJSONFromContent(content: string | null | undefined): string | null {
-    if (!content) return null;
-    // prefer ```json code block
-    const code = /```json\s*([\s\S]*?)```/i.exec(content);
-    if (code && code[1]) return code[1].trim();
-
-    // fallback: find first {...} or [...]
-    const firstBrace = content.indexOf('{');
-    const firstBracket = content.indexOf('[');
-    const start = (firstBrace === -1) ? firstBracket : (firstBracket === -1 ? firstBrace : Math.min(firstBrace, firstBracket));
-    if (start === -1) return null;
-    const lastBrace = content.lastIndexOf('}');
-    const lastBracket = content.lastIndexOf(']');
-    const end = Math.max(lastBrace, lastBracket);
-    if (end === -1 || end <= start) return null;
-    return content.slice(start, end + 1);
-}
-
 export async function categorizePost(post: string, clientOverride?: OpenAI) {
     const usedClient: OpenAI = clientOverride ?? openai;
     const systemPrompt = `You are a post categorization system.
@@ -76,9 +58,13 @@ Be strict: do not include any explanatory text, only the JSON above (fenced ${'`
     });
 
     const raw = response.choices[0].message?.content;
-    const candidate = extractJSONFromContent(raw) ?? raw ?? "";
+    if (!raw) {
+        console.error("No content returned from OpenAI");
+        return null;
+    }
+
     try {
-        const parsed = JSON.parse(candidate as string);
+        const parsed = JSON.parse(raw);
         const validated = CategorizationSchema.parse(parsed);
         return validated;
     } catch (err) {
