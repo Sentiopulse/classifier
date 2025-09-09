@@ -1,35 +1,22 @@
-import OpenAI from "openai";
-import dotenv from "dotenv";
-dotenv.config();
+import type OpenAI from 'openai';
+import openai from './openaiClient';
 
-// Minimal type for the shape we use from the OpenAI client so we avoid `any`.
-type OpenAILike = { chat: { completions: { create(opts: unknown): Promise<any> } } };
-
-function getClient(clientOverride?: OpenAILike): OpenAILike {
-    if (clientOverride) return clientOverride;
-    if (process.env.OPENAI_API_KEY) {
-        return (new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) as unknown) as OpenAILike;
-    }
-    throw new Error("OPENAI_API_KEY is not set. Set it in the environment or pass a clientOverride.");
-}
-
-// Sentiment analysis result type
+// Sentiment analysis result type  
 export type SentimentResult = {
     post: string;
     sentiment: "BULLISH" | "BEARISH" | "NEUTRAL";
 };
 
 // Analyze multiple posts at once
-export async function analyzeMultiplePosts(posts: string[], clientOverride?: OpenAILike): Promise<SentimentResult[]> {
+export async function analyzeMultiplePosts(posts: string[], clientOverride?: OpenAI): Promise<SentimentResult[]> {
     const results: SentimentResult[] = [];
     for (const post of posts) {
         try {
-            const usedClient = clientOverride ?? getClient();
+            const usedClient = clientOverride ?? openai;
 
-            // Updated prompt: enforce uppercase sentiments
-            const prompt = `
-You are a sentiment analysis system for crypto-related posts.
-Classify the sentiment of the following post into one of: BULLISH, BEARISH, NEUTRAL.
+            // System prompt for instructions, user prompt for content
+            const systemPrompt = `You are a sentiment analysis system for crypto-related posts.
+Classify the sentiment of posts into one of: BULLISH, BEARISH, NEUTRAL.
 
 Important: Always return the sentiment in uppercase letters exactly like this: BULLISH, BEARISH, NEUTRAL,
 because our database stores them in uppercase.
@@ -37,49 +24,65 @@ because our database stores them in uppercase.
 Return only valid JSON in this format:
 {
   "sentiment": "BULLISH"
-}
+}`;
 
-Post: "${post}"
-`;
+            let lastResponse = "";
+            let attempts = 0;
+            const maxAttempts = 3;
 
-            const response = await usedClient.chat.completions.create({
-                model: "gpt-4o-mini",
-                messages: [{ role: "user", content: prompt }],
-            });
+            while (attempts < maxAttempts) {
+                attempts++;
 
-            const content = response.choices?.[0]?.message?.content;
-            if (!content) continue;
+                const messages: Array<{ role: "system" | "user"; content: string }> = [
+                    { role: "system", content: systemPrompt },
+                    { role: "user", content: post }
+                ];
 
-            const candidate = extractJSONFromContent(content) ?? content;
-            const parsedAny = JSON.parse(candidate) as { sentiment?: string };
-            const raw = (parsedAny.sentiment ?? '').toString().toUpperCase().trim();
-            if (!["BULLISH", "BEARISH", "NEUTRAL"].includes(raw)) {
-                console.error("Invalid sentiment from model:", parsedAny.sentiment, "for post:", post);
-                continue;
+                // Add feedback about previous failed attempt
+                if (attempts > 1) {
+                    messages.push({
+                        role: "user",
+                        content: `Your previous response was invalid: "${lastResponse}". Please provide only valid JSON with the exact format specified.`
+                    });
+                }
+
+                const response = await usedClient.chat.completions.create({
+                    model: "gpt-4o-mini",
+                    messages,
+                });
+
+                const content = response.choices?.[0]?.message?.content;
+                if (!content) {
+                    lastResponse = "No content returned";
+                    continue;
+                }
+
+                lastResponse = content.trim();
+
+                try {
+                    const parsedAny = JSON.parse(lastResponse) as { sentiment?: string };
+                    const raw = (parsedAny.sentiment ?? '').toString().toUpperCase().trim();
+
+                    if (!["BULLISH", "BEARISH", "NEUTRAL"].includes(raw)) {
+                        lastResponse = `Invalid sentiment: ${parsedAny.sentiment}`;
+                        continue;
+                    }
+
+                    results.push({ post, sentiment: raw as "BULLISH" | "BEARISH" | "NEUTRAL" });
+                    break; // Success, exit retry loop
+                } catch (parseError) {
+                    if (attempts === maxAttempts) {
+                        throw new Error(`Failed to get valid JSON after ${maxAttempts} attempts. Last response: ${lastResponse}`);
+                    }
+                    // Continue to next attempt with feedback
+                }
             }
-            results.push({ post, sentiment: raw as "BULLISH" | "BEARISH" | "NEUTRAL" });
         } catch (e) {
             console.error("Error analyzing post:", post, e);
             continue;
         }
     }
     return results;
-}
-
-// Helper: extract JSON from content possibly containing fenced code blocks
-function extractJSONFromContent(content: string | undefined): string | null {
-    if (!content) return null;
-    const code = /```json\s*([\s\S]*?)```/i.exec(content);
-    if (code && code[1]) return code[1].trim();
-    const firstBrace = content.indexOf('{');
-    const firstBracket = content.indexOf('[');
-    const start = (firstBrace === -1) ? firstBracket : (firstBracket === -1 ? firstBrace : Math.min(firstBrace, firstBracket));
-    if (start === -1) return null;
-    const lastBrace = content.lastIndexOf('}');
-    const lastBracket = content.lastIndexOf(']');
-    const end = Math.max(lastBrace, lastBracket);
-    if (end === -1 || end <= start) return null;
-    return content.slice(start, end + 1);
 }
 
 // Example runner
@@ -92,12 +95,4 @@ export async function runExample() {
 
     const results = await analyzeMultiplePosts(posts);
     console.log("Sentiment Analysis Results:", JSON.stringify(results, null, 2));
-}
-
-// Run CLI example only if explicitly requested
-if (process.argv.includes("--run-sentiment")) {
-    runExample().catch(err => {
-        console.error(err);
-        process.exit(1);
-    });
 }
