@@ -49,6 +49,8 @@ Return only valid JSON in this format:
                 const response = await usedClient.chat.completions.create({
                     model: "gpt-4o-mini",
                     messages,
+                    response_format: { type: "json_object" },
+                    max_tokens: 100
                 });
 
                 const content = response.choices?.[0]?.message?.content;
