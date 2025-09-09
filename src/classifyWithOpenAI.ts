@@ -79,3 +79,4 @@ export async function runCategorization() {
     const result = await categorizePost(post);
     console.log("Categorization Result:", JSON.stringify(result, null, 2));
 }
+runCategorization()
