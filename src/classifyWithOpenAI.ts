@@ -1,33 +1,7 @@
-import OpenAI from "openai";
 // No top-level execution. Export the runner and allow explicit CLI invocation with --run.
-import dotenv from "dotenv";
-dotenv.config();
-
-// Minimal types for the shape we use from the OpenAI client so we avoid `any`.
-type ChatMessage = { content?: string } | undefined;
-type Choice = { message?: ChatMessage };
-type ChatCreateResult = { choices: Choice[] };
-
-interface ChatCompletions {
-    create(opts: unknown): Promise<ChatCreateResult>;
-}
-
-export interface OpenAILike {
-    chat: {
-        completions: ChatCompletions;
-    };
-}
-
-let client: OpenAILike | null = null;
-try {
-    if (process.env.OPENAI_API_KEY) {
-        // The real OpenAI client has a compatible shape at runtime; cast to
-        // our minimal interface for static typing.
-        client = (new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) as unknown) as OpenAILike;
-    }
-} catch (err) {
-    client = null;
-}
+import type OpenAI from 'openai';
+import openai from './openaiClient.js';
+import { z } from 'zod';
 
 const CATEGORIES = [
     "DeFi",
@@ -42,9 +16,21 @@ const CATEGORIES = [
     "Earning",
 ];
 
-export type Categorization = { categories: string[]; subcategories: string[] };
+// Zod schema for categorization validation
+const CategorizationSchema = z.object({
+    categories: z.array(z.string())
+        .min(1, "At least one category is required")
+        .max(2, "At most 2 categories are allowed")
+        .refine((arr) => arr.every((c) => CATEGORIES.includes(c)), {
+            message: "All categories must be from the allowed list",
+        }),
+    subcategories: z.array(z.string().min(1, "Subcategories cannot be empty strings"))
+        .min(1, "At least one subcategory is required"),
+});
 
-function extractJSONFromContent(content: string | undefined): string | null {
+export type Categorization = z.infer<typeof CategorizationSchema>;
+
+function extractJSONFromContent(content: string | null | undefined): string | null {
     if (!content) return null;
     // prefer ```json code block
     const code = /```json\s*([\s\S]*?)```/i.exec(content);
@@ -62,42 +48,9 @@ function extractJSONFromContent(content: string | undefined): string | null {
     return content.slice(start, end + 1);
 }
 
-function validateCategorization(obj: unknown): obj is Categorization {
-    if (!obj || typeof obj !== 'object') return false;
-    const anyObj = obj as any;
-    if (!Array.isArray(anyObj.categories)) return false;
-    if (!Array.isArray(anyObj.categories)) return false;
-    if (!Array.isArray(anyObj.subcategories)) return false;
-
-    // categories: array of strings, each must be one of the whitelist
-    const distinct = new Set<string>();
-    for (const c of anyObj.categories) {
-        if (typeof c !== 'string' || c.trim() === '') return false;
-        if (!CATEGORIES.includes(c)) return false;
-        distinct.add(c);
-    }
-    // enforce at most 2 distinct main categories
-    if (distinct.size > 2) return false;
-
-    // subcategories: flat array of non-empty strings
-    let totalSubcats = 0;
-    for (const s of anyObj.subcategories) {
-        if (typeof s !== 'string' || s.trim() === '') return false;
-        totalSubcats += 1;
-    }
-    // at least one subcategory required
-    if (totalSubcats < 1) return false;
-    return true;
-}
-
-export async function categorizePost(post: string, clientOverride?: OpenAILike) {
-    const usedClient: OpenAILike | undefined = clientOverride ?? client ?? undefined;
-
-    if (!usedClient) {
-        throw new Error("No OpenAI client available. Set OPENAI_API_KEY or pass a clientOverride to categorizePost.");
-    }
-    const prompt = `
-You are a post categorization system.
+export async function categorizePost(post: string, clientOverride?: OpenAI) {
+    const usedClient: OpenAI = clientOverride ?? openai;
+    const systemPrompt = `You are a post categorization system.
 
 Main categories: ${CATEGORIES.join(", ")}.
 
@@ -110,25 +63,22 @@ Instructions:
     "subcategories": ["Yield Farming","Lending Strategies","Risk Management"]
 }
 
-Be strict: do not include any explanatory text, only the JSON above (fenced ${'```json'} blocks are acceptable).
-
-Post: "${post}"
-`;
+Be strict: do not include any explanatory text, only the JSON above (fenced ${'```json'} blocks are acceptable).`;
 
     const response = await usedClient.chat.completions.create({
         model: "gpt-4o-mini",
-        messages: [{ role: "user", content: prompt }],
+        messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: post }
+        ],
     });
 
     const raw = response.choices[0].message?.content;
     const candidate = extractJSONFromContent(raw) ?? raw ?? "";
     try {
         const parsed = JSON.parse(candidate as string);
-        if (!validateCategorization(parsed)) {
-            console.error("Parsed payload failed validation:", parsed);
-            return null;
-        }
-        return parsed as Categorization;
+        const validated = CategorizationSchema.parse(parsed);
+        return validated;
     } catch (err) {
         console.error("Failed to parse/validate GPT output:\n", raw, "\n-> error:", err);
         return null;
@@ -138,19 +88,6 @@ Post: "${post}"
 // Named function to run categorization
 export async function runCategorization() {
     const post = "How to maximize yield farming returns safely in DeFi protocols";
-    if (!process.env.OPENAI_API_KEY) {
-        throw new Error("OPENAI_API_KEY is not set. Set OPENAI_API_KEY in your environment to run real categorization.");
-    }
-
     const result = await categorizePost(post);
     console.log("Categorization Result:", JSON.stringify(result, null, 2));
-}
-
-// Exported runner. To run from the command line without importing, pass --run.
-if (process.argv.includes('--run')) {
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    runCategorization().catch((err) => {
-        console.error(err);
-        process.exit(1);
-    });
 }
