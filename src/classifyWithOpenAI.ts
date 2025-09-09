@@ -71,6 +71,8 @@ Be strict: do not include any explanatory text, only the JSON above (fenced ${'`
             { role: "system", content: systemPrompt },
             { role: "user", content: post }
         ],
+        response_format: { type: "json_object" },
+        max_tokens: 200
     });
 
     const raw = response.choices[0].message?.content;
