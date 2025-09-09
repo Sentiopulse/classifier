@@ -1,5 +1,6 @@
 import type OpenAI from 'openai';
 import openai from './openaiClient';
+import { ChatCompletionMessageParam } from 'openai/resources';
 
 // Sentiment analysis result type  
 export type SentimentResult = {
@@ -8,11 +9,10 @@ export type SentimentResult = {
 };
 
 // Analyze multiple posts at once
-export async function analyzeMultiplePosts(posts: string[], clientOverride?: OpenAI): Promise<SentimentResult[]> {
+export async function analyzeMultiplePosts(posts: string[]): Promise<SentimentResult[]> {
     const results: SentimentResult[] = [];
     for (const post of posts) {
         try {
-            const usedClient = clientOverride ?? openai;
 
             // System prompt for instructions, user prompt for content
             const systemPrompt = `You are a sentiment analysis system for crypto-related posts.
@@ -33,7 +33,7 @@ Return only valid JSON in this format:
             while (attempts < maxAttempts) {
                 attempts++;
 
-                const messages: Array<{ role: "system" | "user"; content: string }> = [
+                const messages: ChatCompletionMessageParam[] = [
                     { role: "system", content: systemPrompt },
                     { role: "user", content: post }
                 ];
@@ -46,7 +46,7 @@ Return only valid JSON in this format:
                     });
                 }
 
-                const response = await usedClient.chat.completions.create({
+                const response = await openai.chat.completions.create({
                     model: "gpt-4o-mini",
                     messages,
                     response_format: { type: "json_object" },
