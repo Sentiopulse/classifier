@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+// No top-level execution. Export the runner and allow explicit CLI invocation with --run.
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -145,5 +146,11 @@ export async function runCategorization() {
     console.log("Categorization Result:", JSON.stringify(result, null, 2));
 }
 
-// Call the named function
-runCategorization();
+// Exported runner. To run from the command line without importing, pass --run.
+if (process.argv.includes('--run')) {
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
+    runCategorization().catch((err) => {
+        console.error(err);
+        process.exit(1);
+    });
+}
