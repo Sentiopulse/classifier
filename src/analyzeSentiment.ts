@@ -98,3 +98,4 @@ export async function runExample() {
     const results = await analyzeMultiplePosts(posts);
     console.log("Sentiment Analysis Results:", JSON.stringify(results, null, 2));
 }
+runExample()
