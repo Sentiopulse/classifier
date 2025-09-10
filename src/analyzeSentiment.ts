@@ -1,5 +1,5 @@
 import type OpenAI from 'openai';
-import openai from './openaiClient';
+import openai from './openaiClient.js';
 import { callOpenAIWithValidation } from './openaiValidationUtil.js';
 import { z } from 'zod';
 import { generateTitleForPost } from './generateTitle';
@@ -74,6 +74,7 @@ async function runExample() {
     }
 }
 
-(async () => {
-    await runExample();
-})();
+// Run example if this file is executed directly (not imported)
+if (require.main === module) {
+    runExample();
+}

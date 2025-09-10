@@ -25,7 +25,7 @@ async function main() {
             await runCategorization();
             break;
 
-        case 'sentiment':
+        case 'sentiment': {
             console.log("Running sentiment analysis only...");
             const samplePosts = [
                 "Bitcoin is looking bullish today! 🚀",
@@ -35,9 +35,10 @@ async function main() {
             const sentimentResults = await analyzeMultiplePosts(samplePosts);
             console.log("Sentiment Results:", JSON.stringify(sentimentResults, null, 2));
             break;
+        }
 
         case 'title':
-        case 'titles':
+        case 'titles': {
             console.log("Running title generation only...");
             const titlePosts = [
                 "Benchmarking tiny on-device ML models for edge inference — latency down 40% with the new quantization pipeline.",
@@ -47,6 +48,7 @@ async function main() {
             const titleResults = await generateTitlesForPosts(titlePosts);
             console.log("Title Results:", JSON.stringify(titleResults, null, 2));
             break;
+        }
 
         case 'help':
         case '--help':

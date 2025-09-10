@@ -75,5 +75,7 @@ export async function runCategorization() {
     console.log("Categorization Result:", JSON.stringify(result, null, 2));
 }
 
-// Run the categorization when this file is executed directly
-runCategorization();
+// Run categorization if this file is executed directly (not imported)
+if (require.main === module) {
+    runCategorization();
+}
