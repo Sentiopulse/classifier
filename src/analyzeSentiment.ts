@@ -2,6 +2,7 @@ import type OpenAI from 'openai';
 import openai from './openaiClient';
 import { callOpenAIWithValidation } from './openaiValidationUtil.js';
 import { z } from 'zod';
+import { generateTitleForPost } from './generateTitle';
 
 // Sentiment analysis result type  
 export type SentimentResult = {
@@ -49,8 +50,8 @@ Return only valid JSON in this format:
     return results;
 }
 
-// Example runner
-export async function runExample() {
+async function runExample() {
+    // Example runner
     const posts = [
         "Bitcoin is going to skyrocket after the halving!",
         "Ethereum might drop below $1000 soon, risky market.",
@@ -58,6 +59,21 @@ export async function runExample() {
     ];
 
     const results = await analyzeMultiplePosts(posts);
-    console.log("Sentiment Analysis Results:", JSON.stringify(results, null, 2));
+    for (let i = 0; i < posts.length; i++) {
+        const post = posts[i];
+        const sentiment = results[i]?.sentiment;
+        const title = await generateTitleForPost(post);
+        console.log(`Post: ${post}`);
+        if (title) {
+            console.log(`Title: ${title}`);
+        }
+        if (sentiment) {
+            console.log(`Sentiment: ${sentiment}`);
+        }
+        console.log('─'.repeat(40));
+    }
 }
-runExample()
+
+(async () => {
+    await runExample();
+})();

@@ -4,6 +4,7 @@ import type { ChatCompletionMessageParam } from "openai/resources";
 import openai from './openaiClient.js';
 import { callOpenAIWithValidation } from './openaiValidationUtil.js';
 import { z } from 'zod';
+import { generateTitleForPost } from './generateTitle';
 
 const CATEGORIES = [
     "DeFi",
@@ -16,6 +17,10 @@ const CATEGORIES = [
     "Safety",
     "Tips",
     "Earning",
+    "Technology",
+    "AI/ML",
+    "Fintech",
+    "Infrastructure"
 ];
 
 // Zod schema for categorization validation
@@ -61,7 +66,14 @@ Be strict: return only raw JSON with exactly that shape; no code fences or prose
 // Named function to run categorization
 export async function runCategorization() {
     const post = "How to maximize yield farming returns safely in DeFi protocols";
+    const title = await generateTitleForPost(post);
     const result = await categorizePost(post);
+    console.log("Post:", post);
+    if (title) {
+        console.log("Title:", title);
+    }
     console.log("Categorization Result:", JSON.stringify(result, null, 2));
 }
-runCategorization()
+
+// Run the categorization when this file is executed directly
+runCategorization();
