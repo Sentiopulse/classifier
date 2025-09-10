@@ -2,6 +2,7 @@
 import type OpenAI from 'openai';
 import type { ChatCompletionMessageParam } from "openai/resources";
 import openai from './openaiClient.js';
+import { callOpenAIWithValidation } from './openaiValidationUtil.js';
 import { z } from 'zod';
 
 const CATEGORIES = [
@@ -48,19 +49,13 @@ Instructions:
 
 Be strict: return only raw JSON with exactly that shape; no code fences or prose.`;
 
-    // Use the utility function for retries and validation
-    const chatParams = {
-        model: "gpt-4o-mini",
-        messages: [
-            { role: "system", content: systemPrompt } as ChatCompletionMessageParam,
-            { role: "user", content: post } as ChatCompletionMessageParam
-        ],
-        response_format: { type: "json_object" } as const,
-        max_tokens: 200
-    };
-    // Import the utility function
-    const { callOpenAIWithValidation } = await import("./openaiValidationUtil.js");
-    return await callOpenAIWithValidation(usedClient, chatParams, CategorizationSchema, 3);
+    return await callOpenAIWithValidation({
+        client: usedClient,
+        systemPrompt,
+        userPrompt: post,
+        schema: CategorizationSchema,
+        retryCount: 3
+    });
 }
 
 // Named function to run categorization
