@@ -13,15 +13,15 @@ export async function callOpenAIWithValidation<T>(params: {
     userPrompt: string,
     schema: ZodSchema<T>,
     retryCount?: number
-}): Promise<T | null> {
+}): Promise<T> {
     let lastError: unknown = null;
     const baseDelayMs = 500;
     const maxAttempts = params.retryCount ?? 3;
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
         const messages: ChatCompletionMessageParam[] = [
-            { role: "system", content: params.systemPrompt } as ChatCompletionMessageParam,
-            { role: "user", content: params.userPrompt } as ChatCompletionMessageParam
+            { role: "system", content: params.systemPrompt },
+            { role: "user", content: params.userPrompt }
         ];
 
         // Add feedback about previous failed attempt
@@ -30,7 +30,7 @@ export async function callOpenAIWithValidation<T>(params: {
             messages.push({
                 role: "user",
                 content: `Your previous response was invalid: "${errorMessage}". Please provide only valid JSON with the exact format specified.`
-            } as ChatCompletionMessageParam);
+            });
         }
 
         const chatParams = {
