@@ -1,5 +1,6 @@
 // No top-level execution. Export the runner and allow explicit CLI invocation with --run.
 import type OpenAI from 'openai';
+import type { ChatCompletionMessageParam } from "openai/resources";
 import openai from './openaiClient.js';
 import { z } from 'zod';
 
@@ -47,30 +48,19 @@ Instructions:
 
 Be strict: do not include any explanatory text, only the JSON above (fenced ${'```json'} blocks are acceptable).`;
 
-    const response = await usedClient.chat.completions.create({
+    // Use the utility function for retries and validation
+    const chatParams = {
         model: "gpt-4o-mini",
         messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: post }
+            { role: "system", content: systemPrompt } as ChatCompletionMessageParam,
+            { role: "user", content: post } as ChatCompletionMessageParam
         ],
-        response_format: { type: "json_object" },
+        response_format: { type: "json_object" } as const,
         max_tokens: 200
-    });
-
-    const raw = response.choices[0].message?.content;
-    if (!raw) {
-        console.error("No content returned from OpenAI");
-        return null;
-    }
-
-    try {
-        const parsed = JSON.parse(raw);
-        const validated = CategorizationSchema.parse(parsed);
-        return validated;
-    } catch (err) {
-        console.error("Failed to parse/validate GPT output:\n", raw, "\n-> error:", err);
-        return null;
-    }
+    };
+    // Import the utility function
+    const { callOpenAIWithValidation } = await import("./openaiValidationUtil.js");
+    return await callOpenAIWithValidation(usedClient, chatParams, CategorizationSchema, 3);
 }
 
 // Named function to run categorization
