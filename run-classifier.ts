@@ -28,9 +28,9 @@ async function main() {
         case 'sentiment': {
             console.log("Running sentiment analysis only...");
             const samplePosts = [
-                "Bitcoin is looking bullish today! 🚀",
-                "Market crash incoming, sell everything now!",
-                "Just reading about DeFi protocols, interesting stuff."
+                "Bitcoin is going to skyrocket after the halving event next month! The fundamentals are incredibly strong and institutional adoption is accelerating. This could be the start of the next major bull run.",
+                "Ethereum might drop below $1000 soon due to the current risky market conditions. The macro environment is deteriorating and there's too much leverage in the system right now.",
+                "The market seems calm today with no major moves in either direction. Bitcoin is trading sideways and most altcoins are following suit. It's a good time to accumulate quality projects."
             ];
             const sentimentResults = await analyzeMultiplePosts(samplePosts);
             console.log("Sentiment Results:", JSON.stringify(sentimentResults, null, 2));

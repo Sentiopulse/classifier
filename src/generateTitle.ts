@@ -1,6 +1,6 @@
 import type OpenAI from 'openai';
-import openai from './openaiClient';
-import { callOpenAIWithValidation } from './openaiValidationUtil';
+import openai from './openaiClient.js';
+import { callOpenAIWithValidation } from './openaiValidationUtil.js';
 import { z } from 'zod';
 
 // Title generation result type
@@ -15,7 +15,7 @@ const TitleSchema = z.object({
 });
 
 // Generate title for a single post
-export async function generateTitleForPost(post: string, clientOverride?: OpenAI): Promise<string | null> {
+export async function generateTitleForPost(post: string, clientOverride?: OpenAI): Promise<string> {
     const usedClient: OpenAI = clientOverride ?? openai;
 
     const systemPrompt = `You are a title generation system for social media posts, particularly crypto and tech-related content.
@@ -41,10 +41,13 @@ Be strict: return only raw JSON with exactly that shape; no code fences or prose
             retryCount: 3
         });
 
-        return validated?.title || null;
+        if (!validated?.title) {
+            throw new Error(`Title generation failed for post: ${post}`);
+        }
+        return validated.title;
     } catch (e) {
         console.error("Error generating title for post:", post, e);
-        return null;
+        throw e;
     }
 }
 

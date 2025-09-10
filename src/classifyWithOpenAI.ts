@@ -4,24 +4,8 @@ import type { ChatCompletionMessageParam } from "openai/resources";
 import openai from './openaiClient.js';
 import { callOpenAIWithValidation } from './openaiValidationUtil.js';
 import { z } from 'zod';
-import { generateTitleForPost } from './generateTitle';
-
-const CATEGORIES = [
-    "DeFi",
-    "NFTs",
-    "Trading",
-    "Staking",
-    "Passive Income",
-    "Altcoins",
-    "Market Trends",
-    "Safety",
-    "Tips",
-    "Earning",
-    "Technology",
-    "AI/ML",
-    "Fintech",
-    "Infrastructure"
-];
+import { generateTitleForPost } from './generateTitle.js';
+import { CATEGORIES } from './constants.js';
 
 // Zod schema for categorization validation
 const CategorizationSchema = z.object({
@@ -65,7 +49,7 @@ Be strict: return only raw JSON with exactly that shape; no code fences or prose
 
 // Named function to run categorization
 export async function runCategorization() {
-    const post = "How to maximize yield farming returns safely in DeFi protocols";
+    const post = "How to maximize yield farming returns safely in DeFi protocols while managing risk exposure. The key is to diversify across multiple platforms and always do thorough research on the smart contracts. Never put all your funds into a single protocol, and always keep some reserves for unexpected market movements.";
     const title = await generateTitleForPost(post);
     const result = await categorizePost(post);
     console.log("Post:", post);

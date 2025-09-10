@@ -1,15 +1,15 @@
 import type OpenAI from 'openai';
-import openai from './openaiClient';
-import { categorizePost, type Categorization } from './classifyWithOpenAI';
-import { analyzeMultiplePosts, type SentimentResult } from './analyzeSentiment';
-import { generateTitleForPost, type TitleResult } from './generateTitle';
+import openai from './openaiClient.js';
+import { categorizePost, type Categorization } from './classifyWithOpenAI.js';
+import { analyzeMultiplePosts, type SentimentResult } from './analyzeSentiment.js';
+import { generateTitleForPost, type TitleResult } from './generateTitle.js';
 
 // Combined result type for complete post analysis
 export type PostAnalysisResult = {
     post: string;
-    title?: string;
-    categorization?: Categorization;
-    sentiment?: "BULLISH" | "BEARISH" | "NEUTRAL";
+    title: string;
+    categorization: Categorization;
+    sentiment: "BULLISH" | "BEARISH" | "NEUTRAL";
     errors?: string[];
 };
 
@@ -19,14 +19,22 @@ export async function analyzeCompletePost(
     clientOverride?: OpenAI
 ): Promise<PostAnalysisResult> {
     const usedClient: OpenAI = clientOverride ?? openai;
-    const result: PostAnalysisResult = { post, errors: [] };
+    // Initialize with empty/default values
+    const result: PostAnalysisResult = {
+        post,
+        title: '',
+        categorization: { categories: [], subcategories: [] },
+        sentiment: "NEUTRAL",
+        errors: []
+    };
 
     // Generate title
     try {
         const title = await generateTitleForPost(post, usedClient);
-        if (title) {
-            result.title = title;
+        if (title === null) {
+            throw new Error(`Title generation failed for post: ${post}`);
         }
+        result.title = title;
     } catch (e) {
         result.errors?.push(`Title generation failed: ${e}`);
         console.error("Title generation error:", e);
@@ -54,6 +62,9 @@ export async function analyzeCompletePost(
         console.error("Sentiment analysis error:", e);
     }
 
+    if (result.errors && result.errors.length > 0) {
+        throw new Error(result.errors.join('; '));
+    }
     return result;
 }
 
@@ -72,6 +83,9 @@ export async function analyzeMultipleCompletePosts(
             console.error("Error analyzing post:", post, e);
             results.push({
                 post,
+                title: '',
+                categorization: { categories: [], subcategories: [] },
+                sentiment: "NEUTRAL",
                 errors: [`Complete analysis failed: ${e}`]
             });
         }
