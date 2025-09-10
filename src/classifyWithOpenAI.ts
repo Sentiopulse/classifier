@@ -46,7 +46,7 @@ Instructions:
     "subcategories": ["Yield Farming","Lending Strategies","Risk Management"]
 }
 
-Be strict: do not include any explanatory text, only the JSON above (fenced ${'```json'} blocks are acceptable).`;
+Be strict: return only raw JSON with exactly that shape; no code fences or prose.`;
 
     // Use the utility function for retries and validation
     const chatParams = {

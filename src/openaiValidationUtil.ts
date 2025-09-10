@@ -12,6 +12,8 @@ export async function callOpenAIWithValidation<T>(
     maxAttempts: number = 3
 ): Promise<T | null> {
     let lastError: unknown = null;
+    const baseDelayMs = 500;
+    const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
         try {
             const response = await openaiClient.chat.completions.create(chatParams);
@@ -22,14 +24,36 @@ export async function callOpenAIWithValidation<T>(
                 raw = typeof content === 'string' ? content : undefined;
             }
             if (!raw) throw new Error('No content returned from OpenAI');
-            const parsed = JSON.parse(raw);
+            const parsed = JSON.parse(extractJson(raw));
             return zodSchema.parse(parsed);
         } catch (err) {
             lastError = err;
-            // Optionally, you can modify chatParams.messages to add feedback for retries
+            // Retry only on transient OpenAI conditions
+            const anyErr = err as any;
+            const status = anyErr?.status || anyErr?.code || anyErr?.error?.code;
+            const type = anyErr?.error?.type || anyErr?.type;
+            const isRateLimit = status === 429 || type === 'rate_limit';
+            const isServerError = typeof status === 'number' && status >= 500;
+            const isQuota = type === 'insufficient_quota';
+            if (isQuota) break; // non-retryable in our flow
+            if ((isRateLimit || isServerError) && attempt < maxAttempts) {
+                const delay = baseDelayMs * 2 ** (attempt - 1) + Math.floor(Math.random() * 100);
+                console.warn(`OpenAI transient error (attempt ${attempt}/${maxAttempts}). Retrying in ${delay}ms...`);
+                await sleep(delay);
+                continue;
+            }
+            // Non-retryable: stop looping
+            break;
         }
     }
     console.error(`Failed after ${maxAttempts} attempts:`, lastError);
     return null;
+}
+
+// Be tolerant to fenced blocks if upstream prompts ever allow them.
+function extractJson(text: string): string {
+    const fence = /```(?:json)?\s*([\s\S]*?)\s*```/i;
+    const m = fence.exec(text);
+    return m ? m[1] : text.trim();
 }
 
