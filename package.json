@@ -3,6 +3,16 @@
   "engines": {
     "node": ">=18.0.0"
   },
+  "scripts": {
+    "classify": "tsx run-classifier.ts",
+    "classify:complete": "tsx run-classifier.ts complete",
+    "classify:categorize": "tsx run-classifier.ts categorize",
+    "classify:sentiment": "tsx run-classifier.ts sentiment",
+    "classify:title": "tsx run-classifier.ts title",
+    "dev": "tsx --watch run-classifier.ts",
+    "build": "tsc",
+    "start": "node dist/run-classifier.js"
+  },
   "dependencies": {
     "@prisma/client": "^6.15.0",
     "dotenv": "^17.2.2",
