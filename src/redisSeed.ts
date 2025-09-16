@@ -127,6 +127,9 @@ async function seedRedis() {
     },
   ];
 
+  // Ensure counts always match the array length (avoids future drift)
+  for (const p of posts) p.totalSubposts = p.subposts.length;
+
   try {
     await redisClient.set("postsWithSubposts", JSON.stringify(posts));
     console.log(`Redis seeding done! Seeded ${posts.length} posts (with subposts).`);
