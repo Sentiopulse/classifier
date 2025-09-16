@@ -70,34 +70,38 @@ const postGroups: PostGroup[] = [
 
 export default postGroups;
 
-// Schedule a cron job to generate and log the title for the first PostGroup every 6 hours
-cron.schedule('0 */6 * * *', async () => {
-    const group = postGroups[0];
-    if (!group) {
-        console.log('No PostGroup found.');
+
+// Reusable function to generate and log the title for the first PostGroup
+export async function logTitlesForAllPostGroups(context: 'CRON' | 'MANUAL' = 'MANUAL') {
+    if (!postGroups.length) {
+        console.log('No PostGroups found.');
         return;
     }
-    try {
-        const title = await generateTitleForPostGroup(group);
-        console.log(`[CRON] Generated Title for PostGroup at ${new Date().toISOString()}:`, title);
-    } catch (e) {
-        console.error('[CRON] Error generating title:', e);
-    }
-});
-
-// If this file is run directly, generate and log the title for the first PostGroup
-if (require.main === module) {
-    (async () => {
-        const group = postGroups[0];
-        if (!group) {
-            console.log('No PostGroup found.');
-            return;
-        }
+    for (const group of postGroups) {
         try {
             const title = await generateTitleForPostGroup(group);
-            console.log('Title:', title);
+            group.title = title;
+            if (context === 'CRON') {
+                console.log(`[CRON] Generated Title for PostGroup (id: ${group.id}) at ${new Date().toISOString()}:`, title);
+            } else {
+                console.log(`Title for PostGroup (id: ${group.id}):`, title);
+            }
         } catch (e) {
-            console.error('Error generating title:', e);
+            if (context === 'CRON') {
+                console.error(`[CRON] Error generating title for PostGroup (id: ${group.id}):`, e);
+            } else {
+                console.error(`Error generating title for PostGroup (id: ${group.id}):`, e);
+            }
         }
-    })();
+    }
+}
+
+// Schedule a cron job to generate and log the title for all PostGroups every 6 hours
+cron.schedule('0 */6 * * *', async () => {
+    await logTitlesForAllPostGroups('CRON');
+});
+
+// If this file is run directly, generate and log the title for all PostGroups
+if (require.main === module) {
+    logTitlesForAllPostGroups('MANUAL');
 }
