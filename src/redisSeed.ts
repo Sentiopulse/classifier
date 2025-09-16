@@ -1,43 +1,140 @@
-import { initRedis } from "./redisClient.js";
-import * as fs from "fs";
-import * as path from "path";
 
-type InputPost = {
+import { initRedis } from "./redisClient.js";
+import { randomUUID } from "crypto";
+
+// Types matching your schema
+type Subpost = {
   id: string;
   content: string;
-  url: string;
-  created_at: string;
-  author: { name: string; handle: string; pfpUrl: string } | null;
+  sentiment: "BULLISH" | "BEARISH" | "NEUTRAL";
+  source: "REDDIT" | "TWITTER" | "YOUTUBE" | "TELEGRAM" | "FARCASTER";
+  categories: string[];
+  subcategories: string[];
+  link?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type Post = {
+  id: string;
+  title: string;
+  subposts: Subpost[];
+  totalSubposts: number;
 };
 
 async function seedRedis() {
   const redisClient = await initRedis();
 
-  // Try to read user-provided input from data/sample_posts.json (project root)
-  const dataPath = path.resolve(process.cwd(), "data", "sample_posts.json");
-  let inputPosts: InputPost[] = [];
-
-  if (fs.existsSync(dataPath)) {
-    try {
-      const raw = fs.readFileSync(dataPath, "utf8");
-      inputPosts = JSON.parse(raw);
-      console.log(`Loaded ${inputPosts.length} posts from data/sample_posts.json`);
-    } catch (err) {
-      console.error("Failed to parse data/sample_posts.json, falling back to bundled sample:", err);
-    }
-  }
+  // Example data: 3 posts, each with a few subposts
+  const posts: Post[] = [
+    {
+      id: randomUUID(),
+      title: "Ethereum Merge",
+      subposts: [
+        {
+          id: randomUUID(),
+          content: "The Ethereum Merge is coming soon!",
+          sentiment: "BULLISH",
+          source: "REDDIT",
+          categories: ["Cryptocurrency", "Development & Engineering"],
+          subcategories: ["Ethereum", "Merge"],
+          link: "https://reddit.com/merge",
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+        {
+          id: randomUUID(),
+          content: "Some are worried about the Merge risks.",
+          sentiment: "BEARISH",
+          source: "TWITTER",
+          categories: ["Cryptocurrency"],
+          subcategories: ["Ethereum", "Risks"],
+          link: "https://twitter.com/merge-risks",
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+      ],
+      totalSubposts: 2,
+    },
+    {
+      id: randomUUID(),
+      title: "Bitcoin ETF Approval",
+      subposts: [
+        {
+          id: randomUUID(),
+          content: "Bitcoin ETF approval could bring new investors.",
+          sentiment: "BULLISH",
+          source: "YOUTUBE",
+          categories: ["Cryptocurrency", "Market Analysis"],
+          subcategories: ["Bitcoin", "ETF"],
+          link: "https://youtube.com/bitcoin-etf",
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+        {
+          id: randomUUID(),
+          content: "Skeptics say ETF won't change much for Bitcoin.",
+          sentiment: "NEUTRAL",
+          source: "REDDIT",
+          categories: ["Cryptocurrency"],
+          subcategories: ["Bitcoin", "ETF"],
+          link: "https://reddit.com/bitcoin-etf-skeptic",
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+      ],
+      totalSubposts: 2,
+    },
+    {
+      id: randomUUID(),
+      title: "AI in Crypto Trading",
+      subposts: [
+        {
+          id: randomUUID(),
+          content: "AI bots are outperforming human traders this quarter.",
+          sentiment: "BULLISH",
+          source: "FARCASTER",
+          categories: ["Artificial Intelligence (AI)", "Trading & Investing"],
+          subcategories: ["AI Bots", "Crypto Trading"],
+          link: "https://farcaster.xyz/ai-bots",
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+        {
+          id: randomUUID(),
+          content: "Some worry about AI manipulation in markets.",
+          sentiment: "BEARISH",
+          source: "TELEGRAM",
+          categories: ["Artificial Intelligence (AI)", "Security & Privacy"],
+          subcategories: ["AI Manipulation", "Market Security"],
+          link: "https://t.me/ai-manipulation",
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+        {
+          id: randomUUID(),
+          content: "AI is a tool, not a guarantee for profits.",
+          sentiment: "NEUTRAL",
+          source: "TWITTER",
+          categories: ["Artificial Intelligence (AI)", "Trading & Investing"],
+          subcategories: ["AI Bots", "Crypto Trading"],
+          link: "https://twitter.com/ai-trading-neutral",
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+      ],
+      totalSubposts: 3,
+    },
+  ];
 
   try {
-    await redisClient.set("posts", JSON.stringify(inputPosts));
-    console.log(`Redis seeding done! Seeded ${inputPosts.length} posts.`);
+    await redisClient.set("postsWithSubposts", JSON.stringify(posts));
+    console.log(`Redis seeding done! Seeded ${posts.length} posts (with subposts).`);
   } finally {
-    // Always attempt to close the client. If disconnect fails, surface the error
-    // after attempting to close (don't swallow fatal errors silently).
     try {
       await redisClient.quit();
     } catch (err) {
       console.error("Failed to disconnect Redis client:", err);
-      // rethrow so callers see the original failure if needed
       throw err;
     }
   }
