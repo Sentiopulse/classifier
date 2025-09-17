@@ -60,37 +60,28 @@ export async function logTitlesForAllPostGroups(context: 'CRON' | 'MANUAL' = 'MA
         console.log('No PostGroups found in Redis.');
         return;
     }
-    let updated = false;
     const postGroupsWithOrderedKeys = [];
     for (const group of postGroups) {
-        let title = group.title;
-        let bullishSummary = group.bullishSummary;
-        let bearishSummary = group.bearishSummary;
-        let neutralSummary = group.neutralSummary;
-
         try {
-            // Generate title
-            title = await generateTitleForPostGroup(group);
-            if (group.title !== title) {
-                updated = true;
-            }
-
-            // Generate sentiment summaries
+            // Always generate and update title
+            const title = await generateTitleForPostGroup(group);
+            // Always generate and update sentiment summaries
             const summaries = await generateSentimentSummariesForPostGroup(group);
-            if (group.bullishSummary !== summaries.bullishSummary ||
-                group.bearishSummary !== summaries.bearishSummary ||
-                group.neutralSummary !== summaries.neutralSummary) {
-                updated = true;
-                bullishSummary = summaries.bullishSummary;
-                bearishSummary = summaries.bearishSummary;
-                neutralSummary = summaries.neutralSummary;
-            }
 
             if (context === 'CRON') {
                 console.log(`[CRON] Generated Title for PostGroup (id: ${group.id}) at ${new Date().toISOString()}:`, title);
             } else {
                 console.log(`Title for PostGroup (id: ${group.id}):`, title);
             }
+
+            postGroupsWithOrderedKeys.push({
+                id: group.id,
+                title,
+                bullishSummary: summaries.bullishSummary,
+                bearishSummary: summaries.bearishSummary,
+                neutralSummary: summaries.neutralSummary,
+                posts: group.posts
+            });
         } catch (e) {
             if (context === 'CRON') {
                 console.error(`[CRON] Error generating title/summaries for PostGroup (id: ${group.id}):`, e);
@@ -98,25 +89,15 @@ export async function logTitlesForAllPostGroups(context: 'CRON' | 'MANUAL' = 'MA
                 console.error(`Error generating title/summaries for PostGroup (id: ${group.id}):`, e);
             }
         }
-        postGroupsWithOrderedKeys.push({
-            id: group.id,
-            title,
-            bullishSummary,
-            bearishSummary,
-            neutralSummary,
-            posts: group.posts
-        });
     }
-    // Save updated PostGroups with titles and summaries back to Redis
-    if (updated) {
-        await initRedis();
-        const redis = getRedisClient();
-        await redis.set('post-groups', JSON.stringify(postGroupsWithOrderedKeys));
-        if (context === 'CRON') {
-            console.log('[CRON] Updated post-groups with titles and sentiment summaries saved to Redis.');
-        } else {
-            console.log('Updated post-groups with titles and sentiment summaries saved to Redis.');
-        }
+    // Always save updated PostGroups with titles and summaries back to Redis
+    await initRedis();
+    const redis = getRedisClient();
+    await redis.set('post-groups', JSON.stringify(postGroupsWithOrderedKeys));
+    if (context === 'CRON') {
+        console.log('[CRON] Updated post-groups with titles and sentiment summaries saved to Redis.');
+    } else {
+        console.log('Updated post-groups with titles and sentiment summaries saved to Redis.');
     }
 }
 
