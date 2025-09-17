@@ -51,7 +51,6 @@ export async function initRedis(): Promise<RedisClientType> {
         await newClient.connect();
         // assign to module client (cast to satisfy TS) and return the concrete client
         client = newClient as unknown as RedisClientType;
-        console.log("Redis connected:", safeRedisUrlForLog(REDIS_URL));
         // Clear connecting before returning so subsequent callers don't wait
         connecting = null;
         return newClient as unknown as RedisClientType;
