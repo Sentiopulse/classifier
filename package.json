@@ -11,7 +11,10 @@
     "classify:title": "tsx run-classifier.ts title",
     "dev": "tsx --watch run-classifier.ts",
     "build": "tsc",
-    "start": "node dist/run-classifier.js"
+    "start": "node dist/run-classifier.js",
+    "seed": "tsx src/seed.ts",
+    "seed:clear": "tsx src/seed.ts clear",
+    "seed:verify": "tsx src/seed.ts verify"
   },
   "dependencies": {
     "@prisma/client": "^6.15.0",

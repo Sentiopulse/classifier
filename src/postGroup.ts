@@ -33,12 +33,12 @@ export async function fetchPostGroupsFromRedis(): Promise<PostGroup[]> {
     await initRedis();
     const redis = getRedisClient();
     // Adjust the key if you use a different one
-    const data = await redis.get('PostGroup');
+    const data = await redis.get('post-groups');
     if (!data) return [];
     try {
         return JSON.parse(data);
     } catch (e) {
-        console.error('Failed to parse PostGroup data from Redis:', e);
+        console.error('Failed to parse post-groups data from Redis:', e);
         return [];
     }
 }
@@ -52,10 +52,15 @@ export async function logTitlesForAllPostGroups(context: 'CRON' | 'MANUAL' = 'MA
         console.log('No PostGroups found in Redis.');
         return;
     }
+    let updated = false;
+    const postGroupsWithOrderedKeys = [];
     for (const group of postGroups) {
+        let title = group.title;
         try {
-            const title = await generateTitleForPostGroup(group);
-            group.title = title;
+            title = await generateTitleForPostGroup(group);
+            if (group.title !== title) {
+                updated = true;
+            }
             if (context === 'CRON') {
                 console.log(`[CRON] Generated Title for PostGroup (id: ${group.id}) at ${new Date().toISOString()}:`, title);
             } else {
@@ -67,6 +72,22 @@ export async function logTitlesForAllPostGroups(context: 'CRON' | 'MANUAL' = 'MA
             } else {
                 console.error(`Error generating title for PostGroup (id: ${group.id}):`, e);
             }
+        }
+        postGroupsWithOrderedKeys.push({
+            id: group.id,
+            title,
+            posts: group.posts
+        });
+    }
+    // Save updated PostGroups with titles back to Redis
+    if (updated) {
+        await initRedis();
+        const redis = getRedisClient();
+        await redis.set('post-groups', JSON.stringify(postGroupsWithOrderedKeys));
+        if (context === 'CRON') {
+            console.log('[CRON] Updated post-groups with titles saved to Redis.');
+        } else {
+            console.log('Updated post-groups with titles saved to Redis.');
         }
     }
 }
