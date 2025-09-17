@@ -1,5 +1,7 @@
+
 import cron from 'node-cron';
 import { generateTitleForPost } from './generateTitle';
+import { initRedis, getRedisClient } from './redisClient';
 
 export type Post = {
     id: string;
@@ -25,56 +27,29 @@ export async function generateTitleForPostGroup(postGroup: PostGroup): Promise<s
     return await generateTitleForPost(combinedContent);
 }
 
-//One group with several posts
-const postGroups: PostGroup[] = [
-    {
-        id: "group1",
-        posts: [
-            {
-                id: "post1",
-                content: `Empery Digital\n@EMPD_BTC\n·\n11m\nBitcoin Firsts that changed everything:\n- $4B Pizza\n- A nation bets on BTC\n- Wall Street embraces it\n- The Trillion-Dollar Club\nFrom a pizza order to reshaping global finance.\n#Bitcoin #BTC #Blockchain #EmperyDigital`,
-                sentiment: "BULLISH",
-                source: "TWITTER",
-                categories: ["Cryptocurrency", "Market Analysis"],
-                subcategories: ["Bitcoin", "Milestones", "Adoption"],
-                link: undefined,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-            },
-            {
-                id: "post2",
-                content: `Empery Digital\n@EMPD_BTC\n·\n11m\nSome notable events in Bitcoin's history include:\n- The purchase of pizza with Bitcoin\n- A country adopting BTC\n- Increased interest from Wall Street\n- Joining the Trillion-Dollar Club\nThese milestones reflect Bitcoin's evolving role in finance.\n#Bitcoin #BTC #Blockchain #EmperyDigital`,
-                sentiment: "NEUTRAL",
-                source: "TWITTER",
-                categories: ["Cryptocurrency", "Market Analysis"],
-                subcategories: ["Bitcoin", "Milestones", "Adoption"],
-                link: undefined,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-            },
-            {
-                id: "post3",
-                content: `Empery Digital\n@EMPD_BTC\n·\n11m\nRecent events in Bitcoin's history have raised concerns:\n- The infamous $4B pizza purchase\n- A nation risking its economy on BTC\n- Wall Street's speculative involvement\n- Entering the Trillion-Dollar Club amid volatility\nFrom a simple transaction to ongoing financial uncertainty.\n#Bitcoin #BTC #Blockchain #EmperyDigital`,
-                sentiment: "BEARISH",
-                source: "TWITTER",
-                categories: ["Cryptocurrency", "Market Analysis"],
-                subcategories: ["Bitcoin", "Milestones", "Risks"],
-                link: undefined,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-            }
-        ]
+
+// Fetch all PostGroups from Redis (expects a key 'PostGroup' with a JSON array, or adapt as needed)
+export async function fetchPostGroupsFromRedis(): Promise<PostGroup[]> {
+    await initRedis();
+    const redis = getRedisClient();
+    // Adjust the key if you use a different one
+    const data = await redis.get('PostGroup');
+    if (!data) return [];
+    try {
+        return JSON.parse(data);
+    } catch (e) {
+        console.error('Failed to parse PostGroup data from Redis:', e);
+        return [];
     }
-];
+}
 
 
-export default postGroups;
 
-
-// Reusable function to generate and log the title for the first PostGroup
+// Reusable function to generate and log the title for all PostGroups from Redis
 export async function logTitlesForAllPostGroups(context: 'CRON' | 'MANUAL' = 'MANUAL') {
+    const postGroups = await fetchPostGroupsFromRedis();
     if (!postGroups.length) {
-        console.log('No PostGroups found.');
+        console.log('No PostGroups found in Redis.');
         return;
     }
     for (const group of postGroups) {
