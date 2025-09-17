@@ -12,7 +12,8 @@ export async function callOpenAIWithValidation<T>(params: {
     systemPrompt: string,
     userPrompt: string,
     schema: ZodSchema<T>,
-    retryCount?: number
+    retryCount?: number,
+    maxTokens?: number
 }): Promise<T> {
     let lastError: unknown = null;
     const baseDelayMs = 500;
@@ -37,7 +38,7 @@ export async function callOpenAIWithValidation<T>(params: {
             model: "gpt-4o-mini",
             messages,
             response_format: { type: "json_object" } as const,
-            max_tokens: 200
+            max_tokens: params.maxTokens ?? 200
         };
         try {
             const response = await params.client.chat.completions.create(chatParams);

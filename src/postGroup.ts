@@ -1,6 +1,6 @@
 
 import cron from 'node-cron';
-import { generateTitleForPost } from './generateTitle';
+import { generateTitleForPost, generateSentimentSummariesForGroup, type SentimentSummaries } from './generateTitle';
 import { initRedis, getRedisClient } from './redisClient';
 
 export type Post = {
@@ -19,12 +19,20 @@ export type PostGroup = {
     id: string;
     posts: Post[];
     title?: string;
+    bullishSummary?: string;
+    bearishSummary?: string;
+    neutralSummary?: string;
 };
 
 // Generate a title for a PostGroup by aggregating its posts' content
 export async function generateTitleForPostGroup(postGroup: PostGroup): Promise<string> {
     const combinedContent = postGroup.posts.map(post => post.content).join('\n\n');
     return await generateTitleForPost(combinedContent);
+}
+
+// Generate sentiment summaries for a PostGroup based on its posts
+export async function generateSentimentSummariesForPostGroup(postGroup: PostGroup): Promise<SentimentSummaries> {
+    return await generateSentimentSummariesForGroup(postGroup.posts);
 }
 
 
@@ -45,50 +53,51 @@ export async function fetchPostGroupsFromRedis(): Promise<PostGroup[]> {
 
 
 
-// Reusable function to generate and log the title for all PostGroups from Redis
+// Reusable function to generate and log the title and sentiment summaries for all PostGroups from Redis
 export async function logTitlesForAllPostGroups(context: 'CRON' | 'MANUAL' = 'MANUAL') {
     const postGroups = await fetchPostGroupsFromRedis();
     if (!postGroups.length) {
         console.log('No PostGroups found in Redis.');
         return;
     }
-    let updated = false;
     const postGroupsWithOrderedKeys = [];
     for (const group of postGroups) {
-        let title = group.title;
         try {
-            title = await generateTitleForPostGroup(group);
-            if (group.title !== title) {
-                updated = true;
-            }
+            // Always generate and update title
+            const title = await generateTitleForPostGroup(group);
+            // Always generate and update sentiment summaries
+            const summaries = await generateSentimentSummariesForPostGroup(group);
+
             if (context === 'CRON') {
                 console.log(`[CRON] Generated Title for PostGroup (id: ${group.id}) at ${new Date().toISOString()}:`, title);
             } else {
                 console.log(`Title for PostGroup (id: ${group.id}):`, title);
             }
+
+            postGroupsWithOrderedKeys.push({
+                id: group.id,
+                title,
+                bullishSummary: summaries.bullishSummary,
+                bearishSummary: summaries.bearishSummary,
+                neutralSummary: summaries.neutralSummary,
+                posts: group.posts
+            });
         } catch (e) {
             if (context === 'CRON') {
-                console.error(`[CRON] Error generating title for PostGroup (id: ${group.id}):`, e);
+                console.error(`[CRON] Error generating title/summaries for PostGroup (id: ${group.id}):`, e);
             } else {
-                console.error(`Error generating title for PostGroup (id: ${group.id}):`, e);
+                console.error(`Error generating title/summaries for PostGroup (id: ${group.id}):`, e);
             }
         }
-        postGroupsWithOrderedKeys.push({
-            id: group.id,
-            title,
-            posts: group.posts
-        });
     }
-    // Save updated PostGroups with titles back to Redis
-    if (updated) {
-        await initRedis();
-        const redis = getRedisClient();
-        await redis.set('post-groups', JSON.stringify(postGroupsWithOrderedKeys));
-        if (context === 'CRON') {
-            console.log('[CRON] Updated post-groups with titles saved to Redis.');
-        } else {
-            console.log('Updated post-groups with titles saved to Redis.');
-        }
+    // Always save updated PostGroups with titles and summaries back to Redis
+    await initRedis();
+    const redis = getRedisClient();
+    await redis.set('post-groups', JSON.stringify(postGroupsWithOrderedKeys));
+    if (context === 'CRON') {
+        console.log('[CRON] Updated post-groups with titles and sentiment summaries saved to Redis.');
+    } else {
+        console.log('Updated post-groups with titles and sentiment summaries saved to Redis.');
     }
 }
 
