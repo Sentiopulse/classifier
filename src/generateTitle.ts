@@ -97,11 +97,12 @@ Be strict: return only raw JSON with exactly that shape; no code fences or prose
             systemPrompt,
             userPrompt: postsJson,
             schema: SentimentSummariesSchema,
-            retryCount: 3
+            retryCount: 3,
+            maxTokens: 800
         });
 
         if (!validated?.bullishSummary || !validated?.bearishSummary || !validated?.neutralSummary) {
-            throw new Error(`Sentiment summaries generation failed for posts: ${postsJson}`);
+            throw new Error(`Sentiment summaries generation failed for posts.`);
         }
         return {
             bullishSummary: validated.bullishSummary,
@@ -109,7 +110,10 @@ Be strict: return only raw JSON with exactly that shape; no code fences or prose
             neutralSummary: validated.neutralSummary
         };
     } catch (e) {
-        console.error("Error generating sentiment summaries for posts:", postsJson, e);
+        console.error("Error generating sentiment summaries.", {
+            postCount: Array.isArray(posts) ? posts.length : undefined,
+            error: e instanceof Error ? e.message : String(e)
+        });
         throw e;
     }
 }
