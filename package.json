@@ -14,7 +14,8 @@
     "start": "node dist/run-classifier.js",
     "seed": "tsx src/seed.ts",
     "seed:clear": "tsx src/seed.ts clear",
-    "seed:verify": "tsx src/seed.ts verify"
+    "seed:verify": "tsx src/seed.ts verify",
+    "format": "npx prettier --write ."
   },
   "dependencies": {
     "@prisma/client": "^6.15.0",
@@ -26,6 +27,7 @@
   },
   "devDependencies": {
     "@types/node": "^24.3.1",
+    "prettier": "^3.6.2",
     "tsx": "^4.20.5",
     "typescript": "^5.9.2"
   }

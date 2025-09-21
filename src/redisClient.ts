@@ -1,21 +1,21 @@
-import dotenv from "dotenv";
-import { createClient, RedisClientType } from "redis";
+import dotenv from 'dotenv';
+import { createClient, RedisClientType } from 'redis';
 
 dotenv.config();
 
 // Prefer IPv4 loopback by default to avoid ::1/IPv6 resolution issues on some systems
-const REDIS_URL = (process.env.REDIS_URL || "redis://127.0.0.1:6379").replace("localhost", "127.0.0.1");
+const REDIS_URL = (process.env.REDIS_URL || 'redis://127.0.0.1:6379').replace('localhost', '127.0.0.1');
 
 function safeRedisUrlForLog(url: string) {
   try {
     const u = new URL(url);
     // show protocol, host and port only; hide auth/userinfo
-    const host = u.hostname || "";
-    const port = u.port ? `:${u.port}` : "";
+    const host = u.hostname || '';
+    const port = u.port ? `:${u.port}` : '';
     return `${u.protocol}//${host}${port}`;
   } catch (e) {
     // fallback: remove everything between // and @ if present
-    return url.replace(/\/\/.*@/, "//");
+    return url.replace(/\/\/.*@/, '//');
   }
 }
 
@@ -39,8 +39,8 @@ export async function initRedis(): Promise<RedisClientType> {
   connecting = (async (): Promise<RedisClientType> => {
     const newClient = createClient({ url: REDIS_URL });
 
-    newClient.on("error", (err: unknown) => {
-      console.error("Redis Client Error:", err);
+    newClient.on('error', (err: unknown) => {
+      console.error('Redis Client Error:', err);
     });
 
     const maxRetries = 5;
@@ -63,10 +63,10 @@ export async function initRedis(): Promise<RedisClientType> {
             // ignore errors from disconnect
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             if ((newClient as any).isOpen) await newClient.disconnect();
-          } catch (e) { }
+          } catch (e) {}
           client = null;
           connecting = null;
-          console.error("All Redis connection attempts failed.");
+          console.error('All Redis connection attempts failed.');
           throw err;
         }
         const delay = baseDelayMs * 2 ** (attempt - 1);
@@ -76,7 +76,7 @@ export async function initRedis(): Promise<RedisClientType> {
 
     // unreachable, but satisfy TypeScript
     connecting = null;
-    throw new Error("Redis connect failed");
+    throw new Error('Redis connect failed');
   })();
 
   return connecting;
@@ -84,7 +84,7 @@ export async function initRedis(): Promise<RedisClientType> {
 
 export function getRedisClient(): RedisClientType {
   if (!client || !client.isOpen) {
-    throw new Error("Redis not initialized or client is closed. Call initRedis() first.");
+    throw new Error('Redis not initialized or client is closed. Call initRedis() first.');
   }
 
   return client;
