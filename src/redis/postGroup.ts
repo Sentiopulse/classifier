@@ -1,5 +1,5 @@
 import cron from 'node-cron';
-import { generateTitleForPost, generateSentimentSummariesForGroup, type SentimentSummaries } from './generateTitle';
+import { generateTitleForPost, generateSentimentSummariesForGroup, type SentimentSummaries } from '../analysis/generateTitle';
 import { initRedis, getRedisClient } from './redisClient';
 
 export type Post = {

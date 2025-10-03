@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
-import { runCompleteAnalysisDemo } from './src/completePostAnalysis.js';
-import { runCategorization } from './src/classifyWithOpenAI.js';
-import { analyzeMultiplePosts } from './src/analyzeSentiment.js';
-import { generateTitlesForPosts } from './src/generateTitle.js';
+import { runCompleteAnalysisDemo } from './src/post/completePostAnalysis.js';
+import { runCategorization } from './src/openai/classifyWithOpenAI.js';
+import { analyzeMultiplePosts } from './src/analysis/analyzeSentiment.js';
+import { generateTitlesForPosts } from './src/analysis/generateTitle.js';
 
 // Get command line argument
 const command = process.argv[2];

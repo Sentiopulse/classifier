@@ -1,4 +1,4 @@
-import openai from './openaiClient.js';
+import openai from '../openai/openaiClient.js';
 
 export async function getEmbeddingWithRetry(input: string, opts?: { model?: string; maxRetries?: number }) {
   const model = opts?.model ?? 'text-embedding-3-small';

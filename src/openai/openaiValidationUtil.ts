@@ -1,7 +1,10 @@
+// This file has been moved to the analysis subfolder.
+// Please update your imports accordingly.
+import { callOpenAIWithValidation } from './analysis/openaiValidationUtil.js';
 import type OpenAI from 'openai';
 import type { ChatCompletionMessageParam } from 'openai/resources';
 import { ZodSchema } from 'zod';
-import { sleep, jitteredBackoff } from './lib/utils.js';
+import { sleep, jitteredBackoff } from '../lib/utils.js';
 
 /**
  * Calls OpenAI chat completion API and validates the response with a Zod schema, retrying up to maxAttempts times.

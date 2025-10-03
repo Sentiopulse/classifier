@@ -1,8 +1,11 @@
+// This file has been moved to the analysis subfolder.
+// Please update your imports accordingly.
+import { analyzeCompletePost } from './analysis/completePostAnalysis.js';
 import type OpenAI from 'openai';
-import openai from './openaiClient.js';
-import { categorizePost, type Categorization } from './classifyWithOpenAI.js';
-import { analyzeMultiplePosts, type SentimentResult } from './analyzeSentiment.js';
-import { generateTitleForPost, type TitleResult } from './generateTitle.js';
+import openai from '../openai/openaiClient.js';
+import { categorizePost, type Categorization } from '../openai/classifyWithOpenAI.js';
+import { analyzeMultiplePosts, type SentimentResult } from '../analysis/analyzeSentiment.js';
+import { generateTitleForPost, type TitleResult } from '../analysis/generateTitle.js';
 
 // Combined result type for complete post analysis
 export type PostAnalysisResult = {

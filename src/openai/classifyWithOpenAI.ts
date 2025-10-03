@@ -1,11 +1,14 @@
+// This file has been moved to the analysis subfolder.
+// Please update your imports accordingly.
+import { categorizePost } from './analysis/classifyWithOpenAI.js';
 // No top-level execution. Export the runner and allow explicit CLI invocation with --run.
 import type OpenAI from 'openai';
 import type { ChatCompletionMessageParam } from 'openai/resources';
 import openai from './openaiClient.js';
 import { callOpenAIWithValidation } from './openaiValidationUtil.js';
 import { z } from 'zod';
-import { generateTitleForPost } from './generateTitle.js';
-import { CATEGORIES } from './constants.js';
+import { generateTitleForPost } from '../analysis/generateTitle.js';
+import { CATEGORIES } from '../lib/constants.js';
 
 // Zod schema for categorization validation
 const CategorizationSchema = z.object({
