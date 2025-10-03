@@ -1,3 +1,6 @@
+// This file has been moved to the analysis subfolder.
+// Please update your imports accordingly.
+export const CATEGORIES = [...]; // Keep the original content
 // src/constants.ts
 
 export const CATEGORIES = [

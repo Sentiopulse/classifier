@@ -1,4 +1,4 @@
-import { PostGroup } from './postGroup';
+import { PostGroup } from '../redis/postGroup';
 
 export const seedData: PostGroup[] = [
   {

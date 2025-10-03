@@ -1,6 +1,6 @@
-import { initRedis, getRedisClient } from './redisClient';
+import { initRedis, getRedisClient } from '../redis/redisClient';
 import { seedData } from './seedData';
-import { PostGroup } from './postGroup';
+import { PostGroup } from '../redis/postGroup';
 
 /**
  * Seeds the Upstash Redis database with mock data for PostGroups.
