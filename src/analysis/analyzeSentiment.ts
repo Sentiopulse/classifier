@@ -1,6 +1,4 @@
-// This file has been moved to the analysis subfolder.
-// Please update your imports accordingly.
-import { analyzeMultiplePosts } from './analyzeSentiment.js';
+
 import type OpenAI from 'openai';
 import openai from '../openai/openaiClient.js';
 import { callOpenAIWithValidation } from '../openai/openaiValidationUtil.js';
