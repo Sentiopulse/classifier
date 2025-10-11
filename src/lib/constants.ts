@@ -20,4 +20,6 @@ export const CATEGORIES = [
   'Economics',
   'Development & Engineering',
   'Research & Innovation'
-];
+] as const;
+
+export type Category = typeof CATEGORIES[number];

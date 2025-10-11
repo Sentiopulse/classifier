@@ -62,7 +62,7 @@ export async function clearDatabase(dryRun: boolean = false): Promise<void> {
     console.log(`🧹 Clearing PostGroup data from database${dryRun ? ' (DRY-RUN)' : ''}...`);
 
     if (dryRun) {
-      console.log('[DRY-RUN] Would attempt to delete 'post-groups' key from Redis.');
+      console.log('[DRY-RUN] Would attempt to delete \'post-groups\' key from Redis.');
     } else {
       await initRedis();
       const redis = getRedisClient();

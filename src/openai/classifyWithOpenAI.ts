@@ -6,12 +6,12 @@ import openai from './openaiClient.js';
 import { callOpenAIWithValidation } from './openaiValidationUtil.js';
 import { z } from 'zod';
 import { generateTitleForPost } from '../analysis/generateTitle.js';
-import { CATEGORIES } from '../lib/constants.js';
+import { CATEGORIES, Category } from '../lib/constants.js';
 
 // Zod schema for categorization validation
 const CategorizationSchema = z.object({
   categories: z
-    .array(z.string())
+    .array(z.custom<Category>())
     .min(1, 'At least one category is required')
     .max(2, 'At most 2 categories are allowed')
     .refine((arr) => arr.every((c) => CATEGORIES.includes(c)), {

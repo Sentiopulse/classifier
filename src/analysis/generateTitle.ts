@@ -1,6 +1,6 @@
 // This file has been moved to the analysis subfolder.
 // Please update your imports accordingly.
-import { generateTitleForPost } from './generateTitle.js';
+
 import type OpenAI from 'openai';
 import openai from '../openai/openaiClient.js';
 import { callOpenAIWithValidation } from '../openai/openaiValidationUtil.js';
