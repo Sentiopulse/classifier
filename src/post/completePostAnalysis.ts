@@ -6,26 +6,50 @@ import { generateTitleForPost } from '../analysis/generateTitle.js';
 import { analyzeCompletePost, type PostAnalysisResult } from './analysis/completePostAnalysis.js';
 
 // Process multiple posts with all analysis
+/**
+ * @param posts An array of post content strings to analyze.
+ * @param clientOverride Optional OpenAI client override.
+ * @returns A promise that resolves to an array of PostAnalysisResult, each containing the analysis for a post.
+ * @remarks This function processes posts with a concurrency limit of 5 to avoid overwhelming the OpenAI API.
+ */
 export async function analyzeMultipleCompletePosts(
   posts: string[],
   clientOverride?: OpenAI
 ): Promise<PostAnalysisResult[]> {
   const results: PostAnalysisResult[] = [];
 
-  for (const post of posts) {
-    try {
-      const analysis = await analyzeCompletePost(post, clientOverride);
-      results.push(analysis);
-    } catch (e) {
-      console.error('Error analyzing post:', post, e);
-      results.push({
-        post,
-        title: '',
-        categorization: { categories: [], subcategories: [] },
-        sentiment: 'NEUTRAL',
-        errors: [`Complete analysis failed: ${e}`]
-      });
-    }
+  const CONCURRENCY_LIMIT = 5; // Limit to 5 concurrent post analyses
+
+  for (let i = 0; i < posts.length; i += CONCURRENCY_LIMIT) {
+    const chunk = posts.slice(i, i + CONCURRENCY_LIMIT);
+    const chunkResults = await Promise.allSettled(
+      chunk.map(async (post) => {
+        try {
+          return await analyzeCompletePost(post, clientOverride);
+        } catch (e) {
+          console.error('Error analyzing post:', post, e);
+          return {
+            post,
+            title: '',
+            categorization: { categories: [], subcategories: [] },
+            sentiment: 'NEUTRAL',
+            errors: [`Complete analysis failed: ${e}`]
+          };
+        }
+      })
+    );
+
+    chunkResults.forEach((res) => {
+      if (res.status === 'fulfilled') {
+        results.push(res.value);
+      } else {
+        // This case should ideally be handled by the catch block within the map,
+        // but as a fallback, we can push a generic error result if a promise rejects unexpectedly.
+        // However, since analyzeCompletePost already handles errors and returns a result,
+        // this else block might not be strictly necessary if analyzeCompletePost is robust.
+        // For now, we'll assume the inner catch handles it.
+      }
+    });
   }
 
   return results;
