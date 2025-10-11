@@ -1,13 +1,14 @@
 import cron from 'node-cron';
 import { generateTitleForPost, generateSentimentSummariesForGroup, type SentimentSummaries } from '../analysis/generateTitle';
 import { initRedis, getRedisClient } from './redisClient';
+import { Category } from '../lib/constants';
 
 export type Post = {
   id: string;
   content: string;
   sentiment: 'BULLISH' | 'BEARISH' | 'NEUTRAL';
   source: 'TWITTER' | 'REDDIT' | 'YOUTUBE' | 'TELEGRAM' | 'FARCASTER';
-  categories: string[];
+  categories: Category[];
   subcategories: string[];
   link?: string;
   createdAt: string;
